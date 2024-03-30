@@ -7,6 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/shundahoy/techready/model"
 	"github.com/shundahoy/techready/repository"
+	"github.com/shundahoy/techready/utility"
 	"github.com/shundahoy/techready/validator"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -51,10 +52,20 @@ func (uu *userUsecase) Login(user model.User) (string, error) {
 	}
 	storedUser := model.User{}
 	if err := uu.ur.GetUserByEmail(&storedUser, user.Email); err != nil {
+		err = &utility.CustomError{
+			Errors: []utility.ErrorPair{
+				{Field: "email", Message: "ユーザーが存在しません。"},
+			},
+		}
 		return "", err
 	}
 	err := bcrypt.CompareHashAndPassword([]byte(storedUser.Password), []byte(user.Password))
 	if err != nil {
+		err = &utility.CustomError{
+			Errors: []utility.ErrorPair{
+				{Field: "password", Message: "パスワードが違います。"},
+			},
+		}
 		return "", err
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
